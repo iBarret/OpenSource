@@ -26,7 +26,7 @@ static  NSString *httpMethods[] = {
 
 @interface CMHttpNetworkManager ()
 
-@property (nonatomic, strong) AFHTTPSessionManager *httpManager;
+@property (nonatomic, strong) AFHTTPSessionManager *httpManager; /**< 请求管理器 */
 
 @end
 
@@ -46,6 +46,7 @@ DEFINE_SINGLETON_T_FOR_CLASS(CMHttpNetworkManager)
         
         //如果报接受类型不一致请替换一致text/html或别的
         self.httpManager.responseSerializer.acceptableContentTypes = [NSSet setWithObjects:@"text/html",@"text/plain", nil];
+        
         
     }
     return self;
@@ -72,6 +73,12 @@ DEFINE_SINGLETON_T_FOR_CLASS(CMHttpNetworkManager)
                                   httpMethod:(HttpMethod)httpMethod
                            constructingBlock:(CMConstructingBlock)constructingBlock
                              completionBlock:(CMCompletionBlock)completionBlock{
+    
+    if ([self.httpManager.reachabilityManager networkReachabilityStatus] == AFNetworkReachabilityStatusUnknown) {
+        NSError *error = [NSError errorWithDomain:@"NSURLErrorNotConnectedToInternet" code:NSURLErrorNotConnectedToInternet userInfo:nil];
+        [self handleCallBackWithResponseObject:nil error:error completionBlock:completionBlock];
+        return nil;
+    }
     
     NSError *serializationError = nil;
     NSMutableURLRequest *request = [self.httpManager.requestSerializer requestWithMethod:httpMethods[httpMethod] URLString:[[NSURL URLWithString:url relativeToURL:self.httpManager.baseURL] absoluteString] parameters:msgDict error:&serializationError];
